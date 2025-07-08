@@ -1,5 +1,4 @@
-import 'package:d2d_finance/screens/login.dart';
-import 'package:d2d_finance/screens/onboarding.dart';
+import 'package:d2d_finance/screens/screens.dart' as screens;
 import 'package:flutter/material.dart';
 
 void main() {
@@ -19,8 +18,8 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const OnboardingScreen(),
-        '/login': (context) => const LoginScreen(),
+        '/': (context) => const screens.OnboardingScreen(),
+        '/login': (context) => const screens.LoginScreen(),
       },
     );
   }
