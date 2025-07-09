@@ -1,26 +1,34 @@
-import 'package:d2d_finance/screens/screens.dart' as screens;
 import 'package:flutter/material.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'core/graphql/client.dart';
+import 'screens/screens.dart' as screens;
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initHiveForFlutter();
+  runApp(MyApp(client: GraphQLService.initClient()));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ValueNotifier<GraphQLClient> client;
+  const MyApp({super.key, required this.client});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Personal Finance Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+    return GraphQLProvider(
+      client: client,
+      child: MaterialApp(
+        title: 'Personal Finance Tracker',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+        ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const screens.OnboardingScreen(),
+          '/login': (context) => const screens.LoginScreen(),
+        },
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const screens.OnboardingScreen(),
-        '/login': (context) => const screens.LoginScreen(),
-      },
     );
   }
 }
