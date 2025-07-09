@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+
+import 'show_create_password_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // GraphQL login mutation
+    const String loginMutation = """
+      mutation Login(\$email: String!, \$password: String!) {
+        loginUser(email: \$email, password: \$password) {
+          message
+          token
+          restToken
+          user {
+            id
+            email
+            firstName
+            lastName
+          }
+        }
+      }
+    """;
+
     return Scaffold(
       backgroundColor: Colors.blue[50],
       body: Center(
@@ -48,19 +68,61 @@ class _LoginScreenState extends State<LoginScreen> {
                   onSaved: (value) => _password = value ?? '',
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _formKey.currentState!.save();
-                      // TODO: Implement GraphQL login logic here
+                Mutation(
+                  options: MutationOptions(
+                    document: gql(loginMutation),
+                    onCompleted: (dynamic resultData) {
+                      print('================>');
+                      print(resultData);
+                      if (resultData != null && resultData['loginUser'] != null) {
+                        final token = resultData['loginUser']['token'];
+                        final restToken = resultData['loginUser']['restToken'];
+                        // TODO: Save token securely (e.g., using flutter_secure_storage)
+                        print('Login successful! Token: $token, Rest Token: $restToken');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Login successful!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid credentials')),
+                        );
+                      }
+                    },
+                    // Inside your login mutation's onError callback:
+                    onError: (error) {
+                      print('=======>error');
+                      print(error);
+                      final errorMsg = error?.graphqlErrors.first.message ?? '';
+                      if (errorMsg.contains('create a new password first')) {
+                        showCreatePasswordDialog(context, (oldPwd, newPwd, confirmPwd) {
+                          // Call your change password mutation here
+                          // Example:
+                          // runChangePasswordMutation({'oldPassword': oldPwd, 'newPassword1': newPwd, 'newPassword2': confirmPwd});
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $errorMsg')),
+                        );
+                      }
                     }
+                  ),
+                  builder: (RunMutation runMutation, QueryResult? result) {
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                      ),
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          _formKey.currentState!.save();
+                          print('Email: $_email, Password: $_password'); // For debugging
+                          runMutation({'email': _email, 'password': _password});
+                        }
+                      },
+                      child: const Text('Log In'),
+                    );
                   },
-                  child: const Text('Log In'),
                 ),
               ],
             ),
